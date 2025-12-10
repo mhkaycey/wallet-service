@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+
+  // output = "./generated/prisma"
+  // output   = "../dist/generated/prisma/client.mjs"
+
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  
+}
+
+
+model User {
+  id            String      @id @default(uuid())
+  googleId      String      @unique
+  email         String      @unique
+  name          String?
+  wallet        Wallet?
+  apiKeys       ApiKey[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Wallet {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  walletNumber  String   @unique
+  balance       Decimal  @default(0) @db.Decimal(15, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  sentTransfers     Transaction[] @relation("SenderWallet")
+  receivedTransfers Transaction[] @relation("ReceiverWallet")
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  reference       String            @unique
+  type            TransactionType
+  amount          Decimal           @db.Decimal(15, 2)
+  status          TransactionStatus @default(PENDING)
+  senderWalletId  String?
+  receiverWalletId String?
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  senderWallet    Wallet? @relation("SenderWallet", fields: [senderWalletId], references: [id])
+  receiverWallet  Wallet? @relation("ReceiverWallet", fields: [receiverWalletId], references: [id])
+
+  @@index([reference])
+  @@index([senderWalletId])
+  @@index([receiverWalletId])
+}
+
+enum TransactionType {
+  DEPOSIT
+  TRANSFER
+}
+
+
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model ApiKey {
+  id          String       @id @default(cuid())
+  userId      String
+  name        String
+  key         String       @unique
+  permissions Permission[]
+  expiresAt   DateTime
+  isRevoked   Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([key])
+  @@index([userId])
+}
+
+enum Permission {
+  DEPOSIT
+  TRANSFER
+  READ
+}
