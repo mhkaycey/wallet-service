@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/client';
 import { TransactionStatus, TransactionType } from '@prisma/client';
@@ -11,6 +12,7 @@ import { PaystackWebhookService } from '../paystack/paystack.webhook.service';
 
 @Injectable()
 export class WalletService {
+  private readonly logger = new Logger(WalletService.name);
   constructor(
     private prisma: PrismaService,
     private paystackService: PaystackService,
@@ -54,9 +56,9 @@ export class WalletService {
     return paystackResponse;
   }
 
-  // async handleWebhook(payload: any) {
-  //   return this.webhookService.handleWebhookEvent(payload);
-  // }
+  async handleWebhook(payload: any) {
+    return this.webhookService.handleWebhookEvent(payload);
+  }
 
   async getDepositStatus(reference: string) {
     const transaction = await this.prisma.transaction.findUnique({
@@ -123,9 +125,26 @@ export class WalletService {
 
     // Execute transfer atomically
     await this.prisma.$transaction(async (tx) => {
+      // Get current balances for debugging
+      const senderBefore = await tx.wallet.findUnique({
+        where: { id: senderUser.wallet!.id },
+        select: { balance: true },
+      });
+      const receiverBefore = await tx.wallet.findUnique({
+        where: { id: receiverWallet.id },
+        select: { balance: true },
+      });
+
+      this.logger.log(
+        `Transfer: ${amount} from ${senderUser.wallet?.id} to ${receiverWallet.id}`,
+      );
+      this.logger.log(
+        `Before: Sender=${senderBefore?.balance?.toString()}, Receiver=${receiverBefore?.balance?.toString()}`,
+      );
+
       // Deduct from sender
       await tx.wallet.update({
-        where: { id: senderUser?.wallet?.id },
+        where: { id: senderUser.wallet!.id },
         data: {
           balance: {
             decrement: new Decimal(amount),
@@ -150,10 +169,24 @@ export class WalletService {
           type: TransactionType.TRANSFER,
           amount: new Decimal(amount),
           status: TransactionStatus.SUCCESS,
-          senderWalletId: senderUser?.wallet?.id,
+          senderWalletId: senderUser.wallet!.id,
           receiverWalletId: receiverWallet.id,
         },
       });
+
+      // Verify balances after update
+      const senderAfter = await tx.wallet.findUnique({
+        where: { id: senderUser.wallet!.id },
+        select: { balance: true },
+      });
+      const receiverAfter = await tx.wallet.findUnique({
+        where: { id: receiverWallet.id },
+        select: { balance: true },
+      });
+
+      this.logger.log(
+        `After: Sender=${senderAfter?.balance?.toString()}, Receiver=${receiverAfter?.balance?.toString()}`,
+      );
     });
 
     return {

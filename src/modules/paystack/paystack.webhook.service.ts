@@ -35,10 +35,18 @@ export class PaystackWebhookService {
         // For webhooks from Paystack, we need to convert from kobo to base currency
         const amountToIncrement = new Decimal(amount / 100);
 
-        await tx.wallet.update({
+        console.log(
+          `Webhook: Updating wallet ${walletId} with amount ${amountToIncrement.toString()}`,
+        );
+        const result = await tx.wallet.update({
           where: { id: walletId },
           data: { balance: { increment: amountToIncrement } },
         });
+        console.log(`Webhook: Update result: ${JSON.stringify(result)}`);
+      } else {
+        console.log(
+          `Webhook: No walletId found for transaction type ${transaction.type}`,
+        );
       }
     });
 
