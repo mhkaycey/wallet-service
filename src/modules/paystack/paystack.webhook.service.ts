@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/client';
-import { TransactionStatus } from '@prisma/client';
+import { TransactionStatus, TransactionType } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
@@ -20,33 +20,41 @@ export class PaystackWebhookService {
 
     // Process the transaction
     await this.prisma.$transaction(async (tx) => {
+      // First update transaction status
       const transaction = await tx.transaction.update({
         where: { reference },
         data: { status: TransactionStatus.SUCCESS },
         include: { senderWallet: true, receiverWallet: true },
       });
 
-      // Determine which wallet to update based on transaction type
-      const walletId =
-        transaction.type === 'DEPOSIT'
-          ? transaction.receiverWalletId
-          : transaction.senderWalletId;
-
-      if (walletId) {
+      // For DEPOSIT transactions, update receiver's wallet balance
+      if (
+        transaction.type === TransactionType.DEPOSIT &&
+        transaction.receiverWalletId
+      ) {
         // For webhooks from Paystack, we need to convert from kobo to base currency
         const amountToIncrement = new Decimal(amount / 100);
 
         this.logger.log(
-          `Webhook: Updating wallet ${walletId} with amount ${amountToIncrement.toString()}`,
+          `Webhook: Updating wallet ${transaction.receiverWalletId} with amount ${amountToIncrement.toString()}`,
         );
-        const result = await tx.wallet.update({
-          where: { id: walletId },
+
+        await tx.wallet.update({
+          where: { id: transaction.receiverWalletId },
           data: { balance: { increment: amountToIncrement } },
         });
-        this.logger.log(`Webhook: Update result: ${JSON.stringify(result)}`);
+
+        this.logger.log(`Webhook: Deposit processed successfully`);
+      } else if (
+        transaction.type === TransactionType.TRANSFER &&
+        transaction.senderWalletId &&
+        transaction.receiverWalletId
+      ) {
+        // For transfers, we don't need to update balances as they should already be updated
+        this.logger.log(`Webhook: Transfer transaction ${reference} confirmed`);
       } else {
         this.logger.log(
-          `Webhook: No walletId found for transaction type ${transaction.type}`,
+          `Webhook: Unsupported transaction type ${transaction.type} or missing wallet IDs`,
         );
       }
     });
