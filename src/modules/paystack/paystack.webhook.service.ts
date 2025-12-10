@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/client';
 import { TransactionStatus } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 
 @Injectable()
 export class PaystackWebhookService {
+  logger = new Logger(PaystackWebhookService.name);
   constructor(private prisma: PrismaService) {}
 
   async handleChargeSuccess(reference: string, amount: number) {
@@ -35,16 +36,16 @@ export class PaystackWebhookService {
         // For webhooks from Paystack, we need to convert from kobo to base currency
         const amountToIncrement = new Decimal(amount / 100);
 
-        console.log(
+        this.logger.log(
           `Webhook: Updating wallet ${walletId} with amount ${amountToIncrement.toString()}`,
         );
         const result = await tx.wallet.update({
           where: { id: walletId },
           data: { balance: { increment: amountToIncrement } },
         });
-        console.log(`Webhook: Update result: ${JSON.stringify(result)}`);
+        this.logger.log(`Webhook: Update result: ${JSON.stringify(result)}`);
       } else {
-        console.log(
+        this.logger.log(
           `Webhook: No walletId found for transaction type ${transaction.type}`,
         );
       }

@@ -35,14 +35,14 @@ async function bootstrap() {
   );
   // app.useGlobalGuards(app.get(ThrottlerGuard));
 
-  // Configure body parsers
-  app.use(bodyParser.json({ limit: '10mb' }));
-
-  // Raw body parser for webhook endpoint (for signature verification)
+  // Raw body parser for webhook endpoint (for signature verification) - MUST come first
   app.use(
     '/wallet/paystack/webhook',
     bodyParser.raw({ type: 'application/json', limit: '10mb' }),
   );
+
+  // JSON parser for all other endpoints
+  app.use(bodyParser.json({ limit: '10mb' }));
 
   // Swagger
   const configSwagger = new DocumentBuilder()

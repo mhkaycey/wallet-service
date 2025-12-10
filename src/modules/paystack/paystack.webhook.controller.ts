@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Headers, Req, Res } from '@nestjs/common';
+import { Controller, Post, Headers, Req, Res } from '@nestjs/common';
 
 import express from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
@@ -26,8 +26,15 @@ export class PaystackWebhookController {
     @Req() req: any,
     @Res() res: express.Response,
     @Headers('x-paystack-signature') signature: string,
-    @Body() body: any,
   ) {
+    // Parse the raw body manually since we're using raw body parser
+    let body: any;
+    try {
+      body = JSON.parse(req.rawBody);
+    } catch (error) {
+      return res.status(400).json({ error: 'Invalid JSON payload' });
+    }
+
     if (!this.paystackService.verifyWebhookSignature(req.rawBody, signature)) {
       return res.status(400).json({ error: 'Invalid signature' });
     }
