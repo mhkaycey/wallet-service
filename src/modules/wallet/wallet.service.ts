@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/client';
 import { TransactionStatus, TransactionType } from '@prisma/client';
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { PaystackService } from '../paystack/paystack.service';
 
 @Injectable()

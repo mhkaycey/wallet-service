@@ -7,7 +7,7 @@ import { Permission } from '@prisma/client';
 
 import * as crypto from 'crypto';
 
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ApiKeyService {

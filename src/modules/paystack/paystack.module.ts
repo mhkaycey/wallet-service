@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PaystackService } from './paystack.service';
 import { PaystackWebhookController } from './paystack.webhook.controller';
-import { PrismaModule } from 'prisma/prisma.module';
+import { PrismaModule } from 'src/prisma/prisma.module';
 
 @Module({
   imports: [PrismaModule],
