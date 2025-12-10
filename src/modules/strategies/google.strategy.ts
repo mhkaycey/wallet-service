@@ -8,8 +8,9 @@ import {
 } from 'passport-google-oauth20';
 import { ConfigService } from '@nestjs/config';
 
-import { AuthConfig } from 'src/config/authConfig';
+// import { AuthConfig } from 'src/config/authConfig';
 import { AuthService } from '../auth/auth.service';
+import { AuthConfig } from 'src/config/authConfig';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {

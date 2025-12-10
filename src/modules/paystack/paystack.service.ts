@@ -65,10 +65,11 @@ export class PaystackService {
 
       return {
         status: response.data.data.status,
-        amount: response.data.data.amount / 100, // Convert from kobo
+        amount: response.data.data.amount / 100,
         reference: response.data.data.reference,
       };
     } catch (error) {
+      this.logger.error(error);
       throw new BadRequestException('Failed to verify Paystack transaction');
     }
   }

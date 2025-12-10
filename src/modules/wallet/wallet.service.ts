@@ -7,12 +7,14 @@ import { Decimal } from '@prisma/client/runtime/client';
 import { TransactionStatus, TransactionType } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 import { PaystackService } from '../paystack/paystack.service';
+import { PaystackWebhookService } from '../paystack/paystack.webhook.service';
 
 @Injectable()
 export class WalletService {
   constructor(
     private prisma: PrismaService,
     private paystackService: PaystackService,
+    private webhookService: PaystackWebhookService,
   ) {}
 
   async initiateDeposit(userId: string, amount: number) {
@@ -52,56 +54,9 @@ export class WalletService {
     return paystackResponse;
   }
 
-  async handleWebhook(payload: any) {
-    const { event, data } = payload;
-
-    if (event !== 'charge.success') {
-      return { status: true };
-    }
-
-    const { reference, amount, status } = data;
-
-    // Find transaction
-    const transaction = await this.prisma.transaction.findUnique({
-      where: { reference },
-      include: { receiverWallet: true },
-    });
-
-    if (!transaction) {
-      throw new NotFoundException('Transaction not found');
-    }
-
-    // Prevent double-credit (idempotency)
-    if (transaction.status === TransactionStatus.SUCCESS) {
-      return { status: true };
-    }
-
-    if (status === 'success') {
-      // Update transaction and wallet balance atomically
-      await this.prisma.$transaction(async (tx) => {
-        await tx.transaction.update({
-          where: { id: transaction.id },
-          data: { status: TransactionStatus.SUCCESS },
-        });
-
-        await tx.wallet.update({
-          where: { id: transaction.receiverWalletId! },
-          data: {
-            balance: {
-              increment: new Decimal(amount / 100), // Convert from kobo
-            },
-          },
-        });
-      });
-    } else {
-      await this.prisma.transaction.update({
-        where: { id: transaction.id },
-        data: { status: TransactionStatus.FAILED },
-      });
-    }
-
-    return { status: true };
-  }
+  // async handleWebhook(payload: any) {
+  //   return this.webhookService.handleWebhookEvent(payload);
+  // }
 
   async getDepositStatus(reference: string) {
     const transaction = await this.prisma.transaction.findUnique({

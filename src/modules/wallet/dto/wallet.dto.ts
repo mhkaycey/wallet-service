@@ -1,5 +1,5 @@
 import { IsNumber, IsString, Min } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class DepositDto {
   @ApiProperty({
@@ -15,7 +15,7 @@ export class DepositDto {
 export class TransferDto {
   @ApiProperty({
     description: 'Recipient wallet number',
-    example: 'WALLET123456789',
+    example: '0123456789',
   })
   @IsString()
   wallet_number: string;

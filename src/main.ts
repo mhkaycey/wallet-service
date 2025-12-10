@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig } from './config/appConfig';
+import * as bodyParser from 'body-parser';
 // import { ThrottlerGuard } from '@nestjs/throttler';
 
 async function bootstrap() {
@@ -22,6 +23,7 @@ async function bootstrap() {
       'Authorization',
       'Accept',
       'X-Requested-With',
+      'x-paystack-signature',
     ],
   });
   app.useGlobalPipes(
@@ -33,22 +35,14 @@ async function bootstrap() {
   );
   // app.useGlobalGuards(app.get(ThrottlerGuard));
 
-  // Raw body for webhook
-  app.use((req: any, res, next) => {
-    if (req.originalUrl === '/wallet/paystack/webhook') {
-      let data = '';
-      req.setEncoding('utf8');
-      req.on('data', (chunk) => {
-        data += chunk;
-      });
-      req.on('end', () => {
-        req.rawBody = Buffer.from(data);
-        next();
-      });
-    } else {
-      next();
-    }
-  });
+  // Configure body parsers
+  app.use(bodyParser.json({ limit: '10mb' }));
+
+  // Raw body parser for webhook endpoint (for signature verification)
+  app.use(
+    '/wallet/paystack/webhook',
+    bodyParser.raw({ type: 'application/json', limit: '10mb' }),
+  );
 
   // Swagger
   const configSwagger = new DocumentBuilder()
