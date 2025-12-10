@@ -4,7 +4,7 @@ import { WalletService } from './wallet.service';
 
 import { ApiKeyModule } from '../api-key/api-key.module';
 import { AuthModule } from '../auth/auth.module';
-import { PrismaModule } from 'src/prisma/prisma.module';
+import { PrismaModule } from 'prisma/prisma.module';
 import { PaystackModule } from '../paystack/paystack.module';
 
 @Module({

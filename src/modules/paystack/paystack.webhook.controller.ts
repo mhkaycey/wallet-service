@@ -13,7 +13,7 @@ import { TransactionStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/client';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { PaystackService } from './paystack.service';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from 'prisma/prisma.service';
 
 @ApiTags('Paystack Webhooks')
 @Controller('wallet/paystack')

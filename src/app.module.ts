@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { JwtModule } from '@nestjs/jwt';
 
-import { PrismaModule } from './prisma/prisma.module';
+import { PrismaModule } from '../prisma/prisma.module';
 import { PaystackModule } from './modules/paystack/paystack.module';
 import authConfig from './config/authConfig';
 import { AuthModule } from './modules/auth/auth.module';
