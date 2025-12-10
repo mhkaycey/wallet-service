@@ -164,8 +164,14 @@ export class ApiKeyService {
   }
 
   private generateApiKey(): string {
-    const randomBytes = crypto.randomBytes(32);
-    return `sk_live_${randomBytes.toString('hex')}`;
+    const id = crypto.randomUUID();
+    const random = crypto.randomBytes(32).toString('hex');
+
+    const randomBytes = crypto
+      .createHash('sha256')
+      .update(`${id}:${random}`)
+      .digest('hex');
+    return `sk_live_${randomBytes}`;
   }
 
   private calculateExpiry(expiry: string): Date {

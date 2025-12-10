@@ -9,10 +9,13 @@ import {
 } from '@nestjs/common';
 
 import express from 'express';
+import { TransactionStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/client';
+import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { PaystackService } from './paystack.service';
 import { PrismaService } from 'prisma/prisma.service';
 
+@ApiTags('Paystack Webhooks')
 @Controller('wallet/paystack')
 export class PaystackWebhookController {
   constructor(
@@ -21,6 +24,14 @@ export class PaystackWebhookController {
   ) {}
 
   @Post('webhook')
+  @ApiOperation({ summary: 'Handle Paystack webhook events' })
+  @ApiHeader({
+    name: 'x-paystack-signature',
+    description: 'Paystack webhook signature',
+    required: true,
+  })
+  @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid webhook signature' })
   async handleWebhook(
     @Req() req: any,
     @Res() res: express.Response,
@@ -37,14 +48,14 @@ export class PaystackWebhookController {
       const existing = await this.prisma.transaction.findUnique({
         where: { reference: ref },
       });
-      if (existing?.status === 'SUCCESS') {
+      if (existing?.status === TransactionStatus.SUCCESS) {
         return res.json({ status: true });
       }
 
       await this.prisma.$transaction(async (tx) => {
         const transaction = await tx.transaction.update({
           where: { reference: ref },
-          data: { status: 'SUCCESS' },
+          data: { status: TransactionStatus.SUCCESS },
           include: { senderWallet: true, receiverWallet: true },
         });
 
@@ -55,9 +66,16 @@ export class PaystackWebhookController {
             : transaction.senderWalletId;
 
         if (walletId) {
+          // For deposits, the amount in the transaction is already in base currency
+          // For webhooks from Paystack, we need to convert from kobo to base currency
+          const amountToIncrement =
+            body.event === 'charge.success'
+              ? new Decimal(body.data.amount / 100) // Convert from kobo
+              : new Decimal(transaction.amount);
+
           await tx.wallet.update({
             where: { id: walletId },
-            data: { balance: { increment: new Decimal(transaction.amount) } },
+            data: { balance: { increment: amountToIncrement } },
           });
         }
       });

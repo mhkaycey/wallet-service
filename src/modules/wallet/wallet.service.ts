@@ -6,7 +6,7 @@ import {
 import { Decimal } from '@prisma/client/runtime/client';
 import { TransactionStatus, TransactionType } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
-import { PaystackService } from 'src/paystack/paystack.service';
+import { PaystackService } from '../paystack/paystack.service';
 
 @Injectable()
 export class WalletService {

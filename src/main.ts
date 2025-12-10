@@ -53,7 +53,7 @@ async function bootstrap() {
   // Swagger
   const configSwagger = new DocumentBuilder()
     .setTitle('Wallet Service API')
-    .setDescription('Paystack Wallet System – Stage 9')
+    .setDescription('PayStack Wallet System – Stage 9')
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },

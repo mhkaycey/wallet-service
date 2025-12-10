@@ -3,13 +3,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { JwtModule } from '@nestjs/jwt';
 
-import { AuthModule } from './auth/auth.module';
-import { WalletModule } from './wallet/wallet.module';
-import { ApiKeyModule } from './api-key/api-key.module';
-
 import { PrismaModule } from 'prisma/prisma.module';
-import { PaystackModule } from './paystack/paystack.module';
+import { PaystackModule } from './modules/paystack/paystack.module';
 import authConfig from './config/authConfig';
+import { AuthModule } from './modules/auth/auth.module';
+import { ApiKeyModule } from './modules/api-key/api-key.module';
+import { WalletModule } from './modules/wallet/wallet.module';
 
 @Module({
   imports: [
@@ -49,8 +48,8 @@ import authConfig from './config/authConfig';
 
     PrismaModule,
     AuthModule,
-    WalletModule,
     ApiKeyModule,
+    WalletModule,
     PaystackModule,
   ],
 })
