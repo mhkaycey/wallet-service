@@ -37,7 +37,7 @@ async function bootstrap() {
 
   // Raw body parser for webhook endpoint (for signature verification) - MUST come first
   app.use(
-    '/wallet/paystack/webhook',
+    '/wallet/webhook',
     bodyParser.raw({ type: 'application/json', limit: '10mb' }),
   );
 
@@ -53,7 +53,7 @@ async function bootstrap() {
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'JWT',
     )
-    .addApiKey({ type: 'apiKey', name: 'x-api-key', in: 'header' }, 'API-Key')
+    .addApiKey({ type: 'apiKey', name: 'x-api-key', in: 'header' }, 'api-key')
     .build();
   const document = SwaggerModule.createDocument(app, configSwagger);
   SwaggerModule.setup('api/docs', app, document, {

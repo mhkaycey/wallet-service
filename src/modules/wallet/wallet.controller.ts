@@ -1,6 +1,13 @@
-import * as common from '@nestjs/common';
-
-import type { Request } from 'express';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+  Logger,
+  Get,
+  Param,
+} from '@nestjs/common';
 
 import {
   ApiTags,
@@ -10,8 +17,10 @@ import {
   ApiResponse,
   ApiParam,
 } from '@nestjs/swagger';
+
 import { Throttle } from '@nestjs/throttler';
 import { FlexibleAuthGuard } from 'src/modules/common/guards/guard';
+
 import {
   DepositDto,
   TransferDto,
@@ -21,24 +30,25 @@ import {
   TransactionDto,
   TransactionStatusDto,
 } from './dto/wallet.dto';
-import { Permissions } from 'src/modules/common/decorators/permissions.decorator';
 
+import { Permissions } from 'src/modules/common/decorators/permissions.decorator';
 import { WalletService } from './wallet.service';
 import { PaystackService } from '../paystack/paystack.service';
 
 @ApiTags('Wallet')
-@ApiBearerAuth('JWT') // For JWT
-@ApiSecurity('api-key') // For API Key
-@common.Controller('wallet')
+@ApiBearerAuth('JWT')
+@ApiSecurity('api-key')
+@Controller('wallet')
 export class WalletController {
-  logger = new common.Logger(WalletController.name);
+  logger = new Logger(WalletController.name);
+
   constructor(
     private walletService: WalletService,
     private paystackService: PaystackService,
   ) {}
 
-  @common.Post('deposit')
-  @common.UseGuards(FlexibleAuthGuard)
+  @Post('deposit')
+  @UseGuards(FlexibleAuthGuard)
   @Permissions('deposit')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'Initiate a deposit' })
@@ -54,8 +64,8 @@ export class WalletController {
     description: 'Forbidden - Insufficient permissions',
   })
   async deposit(
-    @common.Req() req,
-    @common.Body() dto: DepositDto,
+    @Req() req,
+    @Body() dto: DepositDto,
   ): Promise<DepositResponseDto> {
     return this.walletService.initiateDeposit(
       req.user.userId || req.user.id,
@@ -63,8 +73,8 @@ export class WalletController {
     );
   }
 
-  @common.Post('transfer')
-  @common.UseGuards(FlexibleAuthGuard)
+  @Post('transfer')
+  @UseGuards(FlexibleAuthGuard)
   @Permissions('transfer')
   @ApiOperation({ summary: 'Transfer funds to another wallet' })
   @ApiResponse({
@@ -83,8 +93,8 @@ export class WalletController {
   })
   @ApiResponse({ status: 404, description: 'Wallet not found' })
   async transfer(
-    @common.Req() req,
-    @common.Body() dto: TransferDto,
+    @Req() req,
+    @Body() dto: TransferDto,
   ): Promise<TransferResponseDto> {
     return this.walletService.transfer(
       req.user.userId || req.user.id,
@@ -93,8 +103,8 @@ export class WalletController {
     );
   }
 
-  @common.Get('balance')
-  @common.UseGuards(FlexibleAuthGuard)
+  @Get('balance')
+  @UseGuards(FlexibleAuthGuard)
   @Permissions('read')
   @ApiOperation({ summary: 'Get wallet balance' })
   @ApiResponse({
@@ -108,12 +118,12 @@ export class WalletController {
     description: 'Forbidden - Insufficient permissions',
   })
   @ApiResponse({ status: 404, description: 'Wallet not found' })
-  async getBalance(@common.Req() req): Promise<BalanceResponseDto> {
+  async getBalance(@Req() req): Promise<BalanceResponseDto> {
     return this.walletService.getBalance(req.user.userId || req.user.id);
   }
 
-  @common.Get('transactions')
-  @common.UseGuards(FlexibleAuthGuard)
+  @Get('transactions')
+  @UseGuards(FlexibleAuthGuard)
   @Permissions('read')
   @ApiOperation({ summary: 'Get wallet transaction history' })
   @ApiResponse({
@@ -127,11 +137,11 @@ export class WalletController {
     description: 'Forbidden - Insufficient permissions',
   })
   @ApiResponse({ status: 404, description: 'Wallet not found' })
-  async getTransactions(@common.Req() req): Promise<TransactionDto[]> {
+  async getTransactions(@Req() req): Promise<TransactionDto[]> {
     return this.walletService.getTransactions(req.user.userId || req.user.id);
   }
 
-  @common.Get('deposit/:reference/status')
+  @Get('deposit/:reference/status')
   @ApiOperation({ summary: 'Get deposit status by reference' })
   @ApiParam({ name: 'reference', description: 'Deposit reference number' })
   @ApiResponse({
@@ -141,7 +151,7 @@ export class WalletController {
   })
   @ApiResponse({ status: 404, description: 'Transaction not found' })
   async getStatus(
-    @common.Param('reference') reference: string,
+    @Param('reference') reference: string,
   ): Promise<TransactionStatusDto> {
     return this.walletService.getDepositStatus(reference);
   }

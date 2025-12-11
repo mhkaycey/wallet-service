@@ -127,7 +127,10 @@ export class ApiKeyService {
     };
   }
 
-  async validateApiKey(key: string, requiredPermission?: Permission) {
+  async validateApiKey(
+    key: string,
+    requiredPermissions?: Permission | Permission[],
+  ) {
     const apiKey = await this.prisma.apiKey.findUnique({
       where: { key },
       include: {
@@ -151,13 +154,25 @@ export class ApiKeyService {
       throw new UnauthorizedException('API key has expired');
     }
 
-    if (
-      requiredPermission &&
-      !apiKey.permissions.includes(requiredPermission)
-    ) {
-      throw new UnauthorizedException(
-        `Missing required permission: ${requiredPermission}`,
+    // Normalize required permissions to an array
+    const required = Array.isArray(requiredPermissions)
+      ? requiredPermissions
+      : requiredPermissions
+        ? [requiredPermissions]
+        : [];
+
+    // Check if the API key has all required permissions
+    if (required.length > 0) {
+      const hasAllPermissions = required.every((permission) =>
+        apiKey.permissions.includes(permission),
       );
+
+      if (!hasAllPermissions) {
+        const missing = required.filter((p) => !apiKey.permissions.includes(p));
+        throw new UnauthorizedException(
+          `Missing required permissions: ${missing.join(', ')}`,
+        );
+      }
     }
 
     return apiKey.user;
